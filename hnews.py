@@ -7,6 +7,7 @@ import sys
 from optparse import OptionParser
 import urllib2
 from lxml import html
+import csv
 
 #==========================================================================
 # CONSTANTS
@@ -98,6 +99,12 @@ def filter1of3(list):
         if i % 3 == 0:
             filtered.append(list[i])
     return filtered
+  
+def appendUrl(posterUrl):
+    urls = []
+    for i in posterUrl:
+        urls.append(URL_BASE+i)
+    return urls
 
 
 def scrapeAllPosts(page):
@@ -108,20 +115,16 @@ def scrapeAllPosts(page):
     intro = [""] * NUMBER_POSTS_PER_PAGE 
 
     postIds = tree.xpath('//span[@class="rank"]/text()')
-    len(postIds)
     votes = tree.xpath('//span[@class="score"]/text()')
-    len(votes)
     title = tree.xpath('//td[@class="title"]/text()')
-    len(title)
-    posterUrls = filter1of3(tree.xpath('//td[@class="subtext"]/a/@href'))
-    len(posterUrls)
+    posterUrls = appendUrl( filter1of3(tree.xpath('//td[@class="subtext"]/a/@href')) ) 
     posterName = filter1of3(tree.xpath('//td[@class="subtext"]/a/text()'))
-    len(posterName)
     permaLinks = tree.xpath('//td[@class="title"]/a/@href')[:-1]
-    len(permaLinks)
-
+    
     posts = [typePost , permaLinks, votes, intro , posterName,posterUrls]
-
+    posts = map(list, zip(*posts))
+    # for p in posts:
+    #     p[-1]=BBASE_URL+p[-1]  
     # posts = []
     # for i in range(NUMBER_POSTS_PER_PAGE):
     #     posts.append([typePost , permaLinks, votes, intro , posterName,posterUrls])
@@ -136,7 +139,7 @@ def scrapeAllPosts(page):
     # tree = html.fromstring(page)
     
     # map(list, zip(*posts))
-    return map(list, zip(*posts))
+    return posts
 
 
 
@@ -188,15 +191,21 @@ for pageUrl in pagesUrls:
     page = loadPageUrl(pageUrl)
     pagePosts = scrapeAllPosts(page)
     allPosts = allPosts + pagePosts
-    
-filterPosts(allPosts,startPost,endPost)    
-
-outputs =filterPosts(allPosts,startPost,endPost)    # inputs
+    filterPosts(allPosts,startPost,endPost)    
 
 
+
+
+
+outputs = filterPosts(allPosts,startPost,endPost)    # inputs
+
+if len(inputs) == 3:
+    myfile = open(inputs[2], 'wb')
+    wr = csv.writer(myfile, quoting=csv.QUOTE_ALL)
+    wr.writerows(outputs)
 
 # If an output file is specified, write to it.
-if options.writefile:
+elif options.writefile:
     writeFile(options.writefile, outputs)
 
 # Otherwise write it to stdout
