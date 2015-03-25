@@ -13,7 +13,7 @@ from lxml import html
 #==========================================================================
 NUMBERS = ["%c"%x for x in range(0x30,0x3A)]
 NUMBER_POSTS_PER_PAGE = 30
-URL_BASE="https://news.ycombinator.com/news?p="
+URL_BASE="https://news.ycombinator.com/"
 
 #==========================================================================
 # FUNCTIONS
@@ -84,7 +84,7 @@ def getPageFromPostId(postid):
 def createPageUrls(start,end):
     pages = []
     for i in range(start,end+1):
-        pages.append(URL_BASE+str(i))
+        pages.append(URL_BASE+'news?p='+str(i))
     return pages
 
 def loadPageUrl(url):
@@ -92,9 +92,38 @@ def loadPageUrl(url):
     html = response.read()
     return html
 
+def filter1of3(list):
+    filtered = []
+    for i in range(len(list)):
+        if i % 3 == 0:
+            filtered.append(list[i])
+    return filtered
+
+
 def scrapeAllPosts(page):
     tree = html.fromstring(page)
-    print tree.xpath('//span[@class="rank"]/text()')
+
+    # not yet
+    typePost = ["Post"] * NUMBER_POSTS_PER_PAGE
+    intro = [""] * NUMBER_POSTS_PER_PAGE 
+
+    postIds = tree.xpath('//span[@class="rank"]/text()')
+    len(postIds)
+    votes = tree.xpath('//span[@class="score"]/text()')
+    len(votes)
+    title = tree.xpath('//td[@class="title"]/text()')
+    len(title)
+    posterUrls = filter1of3(tree.xpath('//td[@class="subtext"]/a/@href'))
+    len(posterUrls)
+    posterName = filter1of3(tree.xpath('//td[@class="subtext"]/a/text()'))
+    len(posterName)
+    permaLinks = tree.xpath('//td[@class="title"]/a/@href')[:-1]
+    len(permaLinks)
+
+    posts = []
+    for i in range(NUMBER_POSTS_PER_PAGE):
+        posts.append([typePost , permaLinks, votes, intro , posterName,posterUrls])
+        # posts.append([typePost[i] , permaLinks[i], votes[i], intro[i] , posterName[i], URL_BASE+posterUrls[i]])
     # permaLinks = getPermalinks(page)
     # points = getPoints(page)
     # intros = getFirst150Chars()
@@ -102,12 +131,12 @@ def scrapeAllPosts(page):
 
     # [getPermalinks(page),getPoints(page),getFirst150Chars(),getPoster(page),)
     # tree = html.fromstring(page)
-    return []
+    return posts
 
 
 
 def filterPosts(posts,start,end):
-    return []
+    return posts
 
 #==========================================================================
 # MAIN PROGRAM
@@ -123,8 +152,7 @@ debug(5, 'Arguments = %s' % args)
 # If a read file is provided, read it.
 if options.readfile:
     inputs = readFile(options.readfile)
-    debug(1, '{0} item(s) found in the file {1}.'.format(len(inputs),
-                                                         options.readfile) )
+    debug(1, '{0} item(s) found in the file {1}.'.format(len(inputs),options.readfile) )
 
 # Else look to see if the user specified any line arguments
 elif args != []:
@@ -158,7 +186,7 @@ for pageUrl in pagesUrls:
     
 filterPosts(allPosts,startPost,endPost)    
 
-outputs =[]# inputs
+outputs =filterPosts(allPosts,startPost,endPost)    # inputs
 
 
 
