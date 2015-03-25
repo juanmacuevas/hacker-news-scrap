@@ -120,10 +120,13 @@ def scrapeAllPosts(page):
     permaLinks = tree.xpath('//td[@class="title"]/a/@href')[:-1]
     len(permaLinks)
 
-    posts = []
-    for i in range(NUMBER_POSTS_PER_PAGE):
-        posts.append([typePost , permaLinks, votes, intro , posterName,posterUrls])
+    posts = [typePost , permaLinks, votes, intro , posterName,posterUrls]
+
+    # posts = []
+    # for i in range(NUMBER_POSTS_PER_PAGE):
+    #     posts.append([typePost , permaLinks, votes, intro , posterName,posterUrls])
         # posts.append([typePost[i] , permaLinks[i], votes[i], intro[i] , posterName[i], URL_BASE+posterUrls[i]])
+
     # permaLinks = getPermalinks(page)
     # points = getPoints(page)
     # intros = getFirst150Chars()
@@ -131,7 +134,9 @@ def scrapeAllPosts(page):
 
     # [getPermalinks(page),getPoints(page),getFirst150Chars(),getPoster(page),)
     # tree = html.fromstring(page)
-    return posts
+    
+    # map(list, zip(*posts))
+    return map(list, zip(*posts))
 
 
 
