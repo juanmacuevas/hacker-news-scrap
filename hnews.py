@@ -9,6 +9,8 @@ import urllib2
 from lxml import html
 import csv
 
+import logging
+
 #==========================================================================
 # CONSTANTS
 #==========================================================================
@@ -113,24 +115,27 @@ def appendUrl(posterUrl):
         urls.append(URL_BASE+i)
     return urls
 
+def getTitles(elements):
+    titles = [ elements[i].text_content().encode("utf-8") for i in range(len(elements)-1) if i%2==1]
+    return titles[:150]
+
 
 def scrapeAllPosts(page):
     tree = html.fromstring(page)
-
     # not yet
     typePost = ["Post"] * NUMBER_POSTS_PER_PAGE
-    intro = [""] * NUMBER_POSTS_PER_PAGE 
-
+    # intro = [""] * NUMBER_POSTS_PER_PAGE 
     postIds = tree.xpath('//span[@class="rank"]/text()')
     votes = tree.xpath('//span[@class="score"]/text()')
-    title = tree.xpath('//td[@class="title"]/text()')
+    title = getTitles(tree.xpath('//td[@class="title"]'))
+
     posterUrls = appendUrl( filter1of3(tree.xpath('//td[@class="subtext"]/a/@href')) ) 
     posterUrls = [p.replace('user','submitted') for p in posterUrls]
 
     posterName = filter1of3( tree.xpath('//td[@class="subtext"]/a/text()') )
     permaLinks = appendUrl( filter2of3(tree.xpath('//td[@class="subtext"]/a/@href')) ) #post link tree.xpath('//td[@class="title"]/a/@href')[:-1]
     
-    posts = [typePost , permaLinks, votes, intro , posterName,posterUrls]
+    posts = [typePost , permaLinks, votes, title , posterName,posterUrls]
     posts = map(list, zip(*posts))
     return posts
 
@@ -151,7 +156,7 @@ def getCommentsFromPost(post):
     for c in tree.xpath('//td[@class="default"]'):
         text = c.text_content().split('\n')
         aux = '\n'.join( text[1:])[:-5]
-        commentsText.append(aux[:min(len(aux),150)])
+        commentsText.append(aux[:min(len(aux),150)].encode("utf-8"))
         commentsAuthor.append(text[0].split(' ')[0])
 
     typeRow = ["comment"] * len(permalinks)    
