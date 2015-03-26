@@ -125,6 +125,8 @@ def scrapeAllPosts(page):
     votes = tree.xpath('//span[@class="score"]/text()')
     title = tree.xpath('//td[@class="title"]/text()')
     posterUrls = appendUrl( filter1of3(tree.xpath('//td[@class="subtext"]/a/@href')) ) 
+    posterUrls = [p.replace('user','submitted') for p in posterUrls]
+
     posterName = filter1of3( tree.xpath('//td[@class="subtext"]/a/text()') )
     permaLinks = appendUrl( filter2of3(tree.xpath('//td[@class="subtext"]/a/@href')) ) #post link tree.xpath('//td[@class="title"]/a/@href')[:-1]
     
@@ -143,7 +145,7 @@ def getCommentsFromPost(post):
     tree = html.fromstring(pageHtml)
     links = tree.xpath('//span[@class="comhead"]/a/@href')
     permalinks = [URL_BASE+links[i] for i in range(len(links)) if i%2 == 1]
-    userlinks = [URL_BASE+links[i] for i in range(len(links)) if i%2 == 0]
+    userlinks = [URL_BASE+links[i].replace('user','submitted') for i in range(len(links)) if i%2 == 0]
     commentsText = []
     commentsAuthor = []
     for c in tree.xpath('//td[@class="default"]'):
