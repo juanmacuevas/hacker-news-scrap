@@ -99,6 +99,13 @@ def filter1of3(list):
         if i % 3 == 0:
             filtered.append(list[i])
     return filtered
+
+def filter2of3(list):
+    filtered = []
+    for i in range(len(list)):
+        if i % 3 == 1:
+            filtered.append(list[i])
+    return filtered
   
 def appendUrl(posterUrl):
     urls = []
@@ -118,33 +125,53 @@ def scrapeAllPosts(page):
     votes = tree.xpath('//span[@class="score"]/text()')
     title = tree.xpath('//td[@class="title"]/text()')
     posterUrls = appendUrl( filter1of3(tree.xpath('//td[@class="subtext"]/a/@href')) ) 
-    posterName = filter1of3(tree.xpath('//td[@class="subtext"]/a/text()'))
-    permaLinks = tree.xpath('//td[@class="title"]/a/@href')[:-1]
+    posterName = filter1of3( tree.xpath('//td[@class="subtext"]/a/text()') )
+    permaLinks = appendUrl( filter2of3(tree.xpath('//td[@class="subtext"]/a/@href')) ) #post link tree.xpath('//td[@class="title"]/a/@href')[:-1]
     
     posts = [typePost , permaLinks, votes, intro , posterName,posterUrls]
     posts = map(list, zip(*posts))
-    # for p in posts:
-    #     p[-1]=BBASE_URL+p[-1]  
-    # posts = []
-    # for i in range(NUMBER_POSTS_PER_PAGE):
-    #     posts.append([typePost , permaLinks, votes, intro , posterName,posterUrls])
-        # posts.append([typePost[i] , permaLinks[i], votes[i], intro[i] , posterName[i], URL_BASE+posterUrls[i]])
-
-    # permaLinks = getPermalinks(page)
-    # points = getPoints(page)
-    # intros = getFirst150Chars()
-    # posters = getPoster(page)
-
-    # [getPermalinks(page),getPoints(page),getFirst150Chars(),getPoster(page),)
-    # tree = html.fromstring(page)
-    
-    # map(list, zip(*posts))
     return posts
 
 
 
 def filterPosts(posts,start,end):
-    return posts
+    return posts[int(start)-1:int(end)]
+
+def getCommentsFromPost(post):
+    comments = [] # comment, permalink, - , 150char, posrter, posterUrl
+    pageHtml = loadPageUrl(post[1])
+    tree = html.fromstring(pageHtml)
+    links = tree.xpath('//span[@class="comhead"]/a/@href')
+    permalinks = [URL_BASE+links[i] for i in range(len(links)) if i%2 == 1]
+    userlinks = [URL_BASE+links[i] for i in range(len(links)) if i%2 == 0]
+    commentsText = []
+    commentsAuthor = []
+    for c in tree.xpath('//td[@class="default"]'):
+        text = c.text_content().split('\n')
+        aux = '\n'.join( text[1:])[:-5]
+        commentsText.append(aux[:min(len(aux),150)])
+        commentsAuthor.append(text[0].split(' ')[0])
+
+    typeRow = ["comment"] * len(permalinks)    
+    points = [" "] * len(permalinks)    
+    comments = [ typeRow , permalinks,points, commentsText , commentsAuthor,userlinks]
+    comments = map(list, zip(*comments))
+    return comments
+
+
+
+
+
+def expandCommentsFromPosts(allPosts):
+    combined = []
+    for p in allPosts:
+        combined.append(p)
+        comments = getCommentsFromPost(p)
+        for c in comments:
+            combined.append(c)
+
+    return combined
+
 
 #==========================================================================
 # MAIN PROGRAM
@@ -191,13 +218,12 @@ for pageUrl in pagesUrls:
     page = loadPageUrl(pageUrl)
     pagePosts = scrapeAllPosts(page)
     allPosts = allPosts + pagePosts
-    filterPosts(allPosts,startPost,endPost)    
+allPosts = filterPosts(allPosts,startPost,endPost)
+    
+postsAndComments = expandCommentsFromPosts(allPosts)
 
-
-
-
-
-outputs = filterPosts(allPosts,startPost,endPost)    # inputs
+# print postsAndComments
+outputs = postsAndComments    # inputs
 
 if len(inputs) == 3:
     myfile = open(inputs[2], 'wb')
@@ -205,7 +231,7 @@ if len(inputs) == 3:
     wr.writerows(outputs)
 
 # If an output file is specified, write to it.
-elif options.writefile:
+if options.writefile:
     writeFile(options.writefile, outputs)
 
 # Otherwise write it to stdout
